@@ -1,5 +1,5 @@
 use clap::Parser;
-use std::{path::PathBuf, str::FromStr};
+use std::{str::FromStr};
 
 #[derive(Parser, Debug, Default)]
 pub struct Config {

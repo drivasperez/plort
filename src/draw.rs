@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::types::DataSet;
 
-pub fn draw(config: &Config, dataset: &DataSet) -> anyhow::Result<()> {
+pub fn draw(_config: &Config, _dataset: &DataSet) -> anyhow::Result<()> {
     todo!()
 }

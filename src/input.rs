@@ -112,7 +112,7 @@ fn process_line(
             cur_x = v;
             has_x = true;
         } else {
-            let p = Point(cur_x as f64, num);
+            let p = Point(cur_x, num);
             dataset.add_pair(config, row_count, col, p);
             col += 1;
             if col == crate::MAX_COLUMNS {
@@ -313,9 +313,9 @@ mod test {
         let exp0_1 = Point(0.0, 2.0);
         let exp0_2 = Point(0.0, 3.0);
 
-        let exp1_0 = (Point(1.0, 4.0));
-        let exp1_1 = (Point(1.0, EMPTY_VALUE));
-        let exp1_2 = (Point(1.0, 6.0));
+        let exp1_0 = Point(1.0, 4.0);
+        let exp1_1 = Point(1.0, EMPTY_VALUE);
+        let exp1_2 = Point(1.0, 6.0);
 
         assert_eq!(dataset.points[0][0], exp0_0);
         assert_eq!(dataset.points[1][0], exp0_1);
@@ -338,10 +338,10 @@ mod test {
         assert_eq!(dataset.rows, 1);
         assert_eq!(dataset.columns, 4);
 
-        let exp0_0 = (Point(0.0, 1.0));
-        let exp0_1 = (Point(0.0, 2.0));
-        let exp0_2 = (Point(0.0, 3.0));
-        let exp0_3 = (Point(0.0, EMPTY_VALUE));
+        let exp0_0 = Point(0.0, 1.0);
+        let exp0_1 = Point(0.0, 2.0);
+        let exp0_2 = Point(0.0, 3.0);
+        let exp0_3 = Point(0.0, EMPTY_VALUE);
 
         assert_eq!(dataset.points[0][0], exp0_0);
         assert_eq!(dataset.points[1][0], exp0_1);
@@ -361,7 +361,7 @@ mod test {
         assert_eq!(dataset.rows, 1);
         assert_eq!(dataset.columns, 4);
 
-        let exp0_0 = (Point(0.0, EMPTY_VALUE));
+        let exp0_0 = Point(0.0, EMPTY_VALUE);
         let exp0_1 = Point(0.0, 1.0);
         let exp0_2 = Point(0.0, 2.0);
         let exp0_3 = Point(0.0, 3.0);
@@ -402,9 +402,9 @@ mod test {
             ],
         ];
 
-        for col in 0..3 {
-            for row in 0..3 {
-                assert_eq!(dataset.points[col][row], points[col][row]);
+        for (i, col) in points.iter().enumerate() {
+            for (j, point) in col.iter().enumerate() {
+                assert_eq!(dataset.points[i][j], *point);
             }
         }
     }
