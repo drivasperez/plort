@@ -5,6 +5,10 @@ use std::{path::PathBuf, str::FromStr};
 pub struct Config {
     #[clap(long = "flip-xy")]
     pub flip_xy: bool,
+    #[clap(short, long)]
+    pub stream_mode: bool,
+    #[clap(long)]
+    pub x_column: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

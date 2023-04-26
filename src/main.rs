@@ -11,6 +11,7 @@ mod types;
 const MAX_COLUMNS: u8 = 255;
 
 fn main() -> io::Result<()> {
+    pretty_env_logger::init();
     let config = Config::parse();
     println!("{:?}", config);
     let mut dataset = DataSet::default();

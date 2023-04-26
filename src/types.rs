@@ -1,9 +1,7 @@
-use log::log;
-
 use crate::config::Config;
 
 #[derive(Debug)]
-pub struct Point(i32, i32);
+pub struct Point(pub f64, pub f64);
 
 #[derive(Debug)]
 pub struct DataSet {
@@ -25,7 +23,7 @@ impl Default for DataSet {
 }
 
 impl DataSet {
-    pub fn add_pair(&mut self, config: &Config, row: usize, col: u8, point: Point) {
+    pub fn add_pair(&mut self, config: &Config, row: usize, col: u8, point: Option<Point>) {
         // Add columns, padding with None as necessary
         while col >= self.columns {
             let mut v = Vec::with_capacity(self.rows);
@@ -46,9 +44,13 @@ impl DataSet {
         }
 
         if config.flip_xy {
-            self.points[col as usize][row] = Some(Point(point.1, point.0));
+            if let Some(point) = point {
+                self.points[col as usize][row] = Some(Point(point.1, point.0));
+            } else {
+                self.points[col as usize][row] = None;
+            }
         } else {
-            self.points[col as usize][row] = Some(point);
+            self.points[col as usize][row] = point;
         }
     }
 }
