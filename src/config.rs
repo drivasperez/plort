@@ -1,7 +1,7 @@
 use clap::Parser;
 use std::{path::PathBuf, str::FromStr};
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Default)]
 pub struct Config {
     #[clap(long = "flip-xy")]
     pub flip_xy: bool,

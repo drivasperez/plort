@@ -1,16 +1,18 @@
+use anyhow::Context;
 use clap::Parser;
 use config::Config;
+use draw::draw;
 use input::{read_input, ReadInputStatus};
-use std::io;
 use types::DataSet;
 
 mod config;
+mod draw;
 mod input;
 mod types;
 
 const MAX_COLUMNS: u8 = 255;
 
-fn main() -> io::Result<()> {
+fn main() -> anyhow::Result<()> {
     pretty_env_logger::init();
     let config = Config::parse();
     println!("{:?}", config);
@@ -18,7 +20,7 @@ fn main() -> io::Result<()> {
 
     let mut end_of_stream = false;
     while !end_of_stream {
-        let status = read_input(&config, &mut dataset)?;
+        let status = read_input(&config, &mut dataset).context("Reading input")?;
         if let ReadInputStatus::EndOfStream = status {
             end_of_stream = true;
         }
@@ -27,15 +29,11 @@ fn main() -> io::Result<()> {
             return Ok(());
         }
 
-        draw(&config, &dataset)?;
+        draw(&config, &dataset).context("Drawing diagram")?;
         if !end_of_stream {
             println!();
         }
     }
 
     Ok(())
-}
-
-fn draw(config: &Config, dataset: &DataSet) -> io::Result<()> {
-    todo!()
 }
