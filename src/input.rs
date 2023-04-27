@@ -56,67 +56,47 @@ fn process_line(
     row_count: usize,
 ) -> ProcessLineResult {
     let line = line.trim_end();
-    let mut col = 0;
 
     if line.is_empty() {
         return ProcessLineResult::Empty;
     }
-    let chars = line.chars().collect::<Vec<char>>();
+
+    let mut col = 0;
+    let content = match line.split_once(is_comment_marker) {
+        Some((data, _comment)) => data,
+        None => line,
+    };
+
+    if content.is_empty() {
+        return ProcessLineResult::Comment;
+    }
 
     let mut cur_x = row_count as f64;
     let mut has_x = false;
 
-    let mut offset = 0;
-    while offset < chars.len() {
-        let mut v = 0.0;
-        let c = chars[offset];
-        if is_comment_marker(c) {
-            return ProcessLineResult::Comment;
-        }
+    let nums = content.split(|c| !number_head(c)).collect::<Vec<_>>();
+    if nums.len() == 2 && nums.iter().all(|x| x.is_empty()) {
+        // Slightly annoying special case, where if the string is a single invalid character,
+        // split will return two empty strings, and we want to treat this as a single
+        // empty value.
+        let point = Point(cur_x, EMPTY_VALUE);
+        dataset.add_pair(config, row_count, col, point);
+        col += 1;
+    } else {
+        for num in nums {
+            let v = num.parse::<f64>().unwrap_or(EMPTY_VALUE);
 
-        // Skip 1 non-number character at the beginning of the line.
-        // If there is more than 1, that's a missing value.
-        if !number_head(c) {
-            if offset == 0 {
-                v = EMPTY_VALUE;
+            if config.x_column && !has_x {
+                cur_x = v;
+                has_x = true;
             } else {
-                offset += 1;
-                if !number_head(chars[offset]) {
-                    v = EMPTY_VALUE;
+                let point = Point(cur_x, v);
+                dataset.add_pair(config, row_count, col, point);
+                col += 1;
+
+                if col == crate::MAX_COLUMNS {
+                    break;
                 }
-            }
-        }
-
-        if v.is_nan() {
-            dataset.add_pair(config, row_count, col, Point(cur_x, v));
-            col += 1;
-            if col == crate::MAX_COLUMNS {
-                break;
-            }
-            offset += 1;
-            continue;
-        }
-
-        let mut end = offset + 1;
-        while end < chars.len() && number_head(chars[end]) {
-            end += 1;
-        }
-
-        let num = &line[offset..end];
-        // TODO: Handle errors
-        let num = num.parse::<f64>().unwrap();
-        v = num;
-        offset = end;
-
-        if config.x_column && !has_x {
-            cur_x = v;
-            has_x = true;
-        } else {
-            let p = Point(cur_x, num);
-            dataset.add_pair(config, row_count, col, p);
-            col += 1;
-            if col == crate::MAX_COLUMNS {
-                break;
             }
         }
     }
