@@ -2,7 +2,7 @@ use crate::config::Config;
 
 pub const EMPTY_VALUE: f64 = std::f64::NAN;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Point(pub f64, pub f64);
 
 impl PartialEq for Point {

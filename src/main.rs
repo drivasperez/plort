@@ -8,6 +8,7 @@ use types::DataSet;
 mod config;
 mod draw;
 mod input;
+mod scale;
 mod types;
 
 const MAX_COLUMNS: u8 = 255;

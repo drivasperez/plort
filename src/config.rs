@@ -1,5 +1,5 @@
 use clap::Parser;
-use std::{str::FromStr};
+use std::str::FromStr;
 
 #[derive(Parser, Debug, Default)]
 pub struct Config {
@@ -9,6 +9,21 @@ pub struct Config {
     pub stream_mode: bool,
     #[clap(long)]
     pub x_column: bool,
+
+    #[clap(long)]
+    pub log_x: bool,
+    #[clap(long)]
+    pub log_y: bool,
+
+    #[clap(long)]
+    pub width: usize,
+    #[clap(long)]
+    pub height: usize,
+
+    #[clap(short, long)]
+    pub mode: PlotType,
+    #[clap(short, long = "output")]
+    pub output_type: OutputType,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -16,6 +31,12 @@ pub enum PlotType {
     Dot,
     Line,
     Count,
+}
+
+impl Default for PlotType {
+    fn default() -> Self {
+        PlotType::Dot
+    }
 }
 
 impl FromStr for PlotType {
@@ -35,6 +56,12 @@ impl FromStr for PlotType {
 pub enum OutputType {
     Ascii,
     Svg,
+}
+
+impl Default for OutputType {
+    fn default() -> Self {
+        OutputType::Ascii
+    }
 }
 
 impl FromStr for OutputType {
