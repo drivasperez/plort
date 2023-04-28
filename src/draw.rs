@@ -1,11 +1,14 @@
+use std::collections::HashMap;
+
 use crate::config::{Config, OutputType, PlotType};
 use crate::scale::ScaledPoint;
 use crate::scale::TransformType;
 use crate::types::DataSet;
-use crate::types::{Point, EMPTY_VALUE};
+use crate::types::Point;
 
 const CROSS_PAD: f64 = 2.0;
 
+#[derive(Debug, Clone)]
 pub struct PlotInfo {
     pub x_min: f64,
     pub x_max: f64,
@@ -25,6 +28,8 @@ pub struct PlotInfo {
     pub draw_y_axis: bool,
     pub y_axis: usize,
     pub x_axis: usize,
+
+    pub counters: Option<Vec<HashMap<(i32, i32), u32>>>,
 }
 
 impl PlotInfo {
@@ -34,46 +39,60 @@ impl PlotInfo {
 
         for col in 0..dataset.columns {
             for row in 0..dataset.rows {
-                let point = &dataset.points[col as usize][row];
-                if point.0 < min_point.0 {
-                    min_point.0 = point.0;
+                let point = dataset.points[col as usize][row];
+                if point.is_empty() {
+                    continue;
                 }
-                if point.1 < min_point.1 {
-                    min_point.1 = point.1;
+
+                if self.log_x && point.0 <= 0.0 {
+                    panic!("Log scale requires positive values");
                 }
-                if point.0 > max_point.0 {
-                    max_point.0 = point.0;
+
+                if self.log_y && point.1 <= 0.0 {
+                    panic!("Log scale requires positive values");
                 }
-                if point.1 > max_point.1 {
-                    max_point.1 = point.1;
+
+                let x = point.0;
+                let y = point.1;
+
+                if x < min_point.0 {
+                    min_point.0 = x;
+                }
+                if x > max_point.0 {
+                    max_point.0 = x;
+                }
+
+                if y < min_point.1 {
+                    min_point.1 = y;
+                }
+                if y > max_point.1 {
+                    max_point.1 = y;
                 }
             }
         }
 
         let transform = TransformType::new(self.log_x, self.log_y);
-        let mut min_point = ScaledPoint::new(min_point, self, transform);
-        let mut max_point = ScaledPoint::new(max_point, self, transform);
+        let min_point = min_point.scale_transform(transform);
+        let mut max_point = max_point.scale_transform(transform);
 
-        if (min_point.0 - max_point.0).abs() < 1 {
-            min_point.0 -= 1;
-            max_point.0 += 1;
+        if min_point.0 == max_point.0 {
+            max_point.0 += 1.0;
         }
 
-        if (min_point.1 - max_point.1).abs() < 1 {
-            min_point.1 -= 1;
-            max_point.1 += 1;
+        if min_point.1 == max_point.1 {
+            max_point.1 += 1.0;
         }
 
-        self.x_min = min_point.0 as f64;
-        self.x_max = max_point.0 as f64;
-        self.y_min = min_point.1 as f64;
-        self.y_max = max_point.1 as f64;
+        self.x_min = min_point.0;
+        self.x_max = max_point.0;
+        self.y_min = min_point.1;
+        self.y_max = max_point.1;
 
         self.x_range = self.x_max - self.x_min;
         self.y_range = self.y_max - self.y_min;
 
-        let crosses_x_axis = self.y_min < 0.0 && self.y_max > 0.0;
-        let crosses_y_axis = self.x_min < 0.0 && self.x_max > 0.0;
+        let crosses_x_axis = self.x_min <= 0.0 && self.x_max >= 0.0;
+        let crosses_y_axis = self.y_min <= 0.0 && self.y_max >= 0.0;
 
         // If the data does not cross the x or y axis, we can
         // clamp the plot's axis to zero.
@@ -126,6 +145,7 @@ impl Default for PlotInfo {
             draw_y_axis: false,
             y_axis: 0,
             x_axis: 0,
+            counters: None,
         }
     }
 }
@@ -149,7 +169,12 @@ pub fn draw(config: &Config, dataset: &DataSet) -> anyhow::Result<()> {
     plot_info.height = config.height;
 
     if config.mode == PlotType::Count {
-        // Count mode
+        let mut counters = Vec::new();
+        for col in 0..dataset.columns {
+            counters.push(count_points(dataset, &plot_info, col as usize));
+        }
+
+        plot_info.counters = Some(counters);
     }
 
     match config.output_type {
@@ -160,6 +185,280 @@ pub fn draw(config: &Config, dataset: &DataSet) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn draw_ascii(config: &Config, dataset: &DataSet, plot_info: &PlotInfo) {}
+fn draw_ascii(_config: &Config, _dataset: &DataSet, _plot_info: &PlotInfo) {
+    todo!()
+}
 
-fn draw_svg(config: &Config, dataset: &DataSet, plot_info: &PlotInfo) {}
+fn draw_svg(_config: &Config, _dataset: &DataSet, _plot_info: &PlotInfo) {
+    todo!()
+}
+
+fn count_points(dataset: &DataSet, plot_info: &PlotInfo, col: usize) -> HashMap<(i32, i32), u32> {
+    let points = &dataset.points[col];
+    let transform = TransformType::new(plot_info.log_x, plot_info.log_y);
+    let mut counts = HashMap::new();
+
+    for row in 0..dataset.rows {
+        let point = &points[row];
+        if point.0.is_nan() || point.1.is_nan() {
+            continue;
+        }
+
+        let scaled_point = ScaledPoint::new(*point, plot_info, transform);
+        let x = scaled_point.0;
+        let y = scaled_point.1;
+
+        let count = counts.entry((x, y)).or_insert(0);
+        *count += 1;
+    }
+
+    counts
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::input::{process_line, ProcessLineResult};
+
+    fn init_plot_info(plot_info: &mut PlotInfo) -> TransformType {
+        plot_info.x_range = plot_info.x_max - plot_info.x_min;
+        plot_info.y_range = plot_info.y_max - plot_info.y_min;
+
+        if plot_info.width == 0 {
+            plot_info.width = 72;
+        }
+
+        if plot_info.height == 0 {
+            plot_info.height = 40;
+        }
+
+        TransformType::new(plot_info.log_x, plot_info.log_y)
+    }
+
+    fn read_lines(cfg: &Config, dataset: &mut DataSet, lines: &[&str]) -> PlotInfo {
+        let mut plot_info = PlotInfo::default();
+
+        plot_info.log_x = cfg.log_x;
+        plot_info.log_y = cfg.log_y;
+
+        for (i, line) in lines.iter().enumerate() {
+            assert_eq!(ProcessLineResult::Ok, process_line(cfg, dataset, line, i));
+        }
+
+        plot_info
+    }
+
+    #[test]
+    fn bounds_basic() {
+        let cfg = Config::default();
+        let mut dataset = DataSet::default();
+        let lines = ["1 2 3", "4 5 6", "7 8 9"];
+
+        let mut plot_info = PlotInfo::default();
+
+        read_lines(&cfg, &mut dataset, &lines);
+
+        plot_info.draw_calc_bounds(&dataset);
+
+        dbg!(&plot_info.x_min);
+        dbg!(&plot_info.x_max);
+        dbg!(&plot_info.y_min);
+        dbg!(&plot_info.y_max);
+
+        assert_eq!(plot_info.x_min, 0.0);
+        assert_eq!(plot_info.x_max, 2.0);
+        assert_eq!(plot_info.y_min, 0.0);
+        assert_eq!(plot_info.y_max, 9.0);
+    }
+
+    #[test]
+    fn bounds_empty_cells() {
+        let cfg = Config::default();
+        let mut dataset = DataSet::default();
+        let lines = ["  2 3", "4   6", "7 8  "];
+
+        let mut plot_info = PlotInfo::default();
+
+        read_lines(&cfg, &mut dataset, &lines);
+
+        plot_info.draw_calc_bounds(&dataset);
+
+        dbg!(&plot_info.x_min);
+        dbg!(&plot_info.x_max);
+        dbg!(&plot_info.y_min);
+        dbg!(&plot_info.y_max);
+
+        assert_eq!(plot_info.x_min, 0.0);
+        assert_eq!(plot_info.x_max, 2.0);
+        assert_eq!(plot_info.y_min, 0.0);
+        assert_eq!(plot_info.y_max, 8.0);
+    }
+
+    #[test]
+    fn bounds_negative_quadrant() {
+        let mut cfg = Config::default();
+        cfg.x_column = true;
+        let mut dataset = DataSet::default();
+        let lines = ["-5 -50", "-3 -30", "-1 -10"];
+
+        let mut plot_info = PlotInfo::default();
+
+        read_lines(&cfg, &mut dataset, &lines);
+
+        plot_info.draw_calc_bounds(&dataset);
+
+        dbg!(&plot_info.x_min);
+        dbg!(&plot_info.x_max);
+        dbg!(&plot_info.y_min);
+        dbg!(&plot_info.y_max);
+
+        assert_eq!(plot_info.x_min, -5.0);
+        assert_eq!(plot_info.x_max, 0.0);
+        assert_eq!(plot_info.y_min, -50.0);
+        assert_eq!(plot_info.y_max, 0.0);
+    }
+
+    #[test]
+    fn bounds_4q() {
+        let mut cfg = Config::default();
+        cfg.x_column = true;
+        let mut dataset = DataSet::default();
+        let lines = ["-5 -50", "-49 49", "0 0", "10 10"];
+
+        let mut plot_info = PlotInfo::default();
+
+        read_lines(&cfg, &mut dataset, &lines);
+
+        plot_info.draw_calc_bounds(&dataset);
+
+        dbg!(&plot_info.x_min);
+        dbg!(&plot_info.x_max);
+        dbg!(&plot_info.y_min);
+        dbg!(&plot_info.y_max);
+
+        // In the original test it's -50 but it seems like it should be -49?
+        assert_eq!(plot_info.x_min, -49.0);
+        assert_eq!(plot_info.x_max, 10.0);
+        assert_eq!(plot_info.y_min, -50.0);
+        assert_eq!(plot_info.y_max, 49.0);
+    }
+
+    #[test]
+    fn bounds_diff_quadrants_for_columns() {
+        let mut cfg = Config::default();
+        cfg.x_column = true;
+        let mut dataset = DataSet::default();
+        let lines = ["-50 -50 50", "-49 -49 49", "-48 -48 48", "-47 -47 47"];
+
+        let mut plot_info = PlotInfo::default();
+
+        read_lines(&cfg, &mut dataset, &lines);
+
+        plot_info.draw_calc_bounds(&dataset);
+
+        dbg!(&plot_info.x_min);
+        dbg!(&plot_info.x_max);
+        dbg!(&plot_info.y_min);
+        dbg!(&plot_info.y_max);
+
+        assert_eq!(plot_info.x_min, -50.0);
+        assert_eq!(plot_info.x_max, -47.0);
+        assert_eq!(plot_info.y_min, -50.0);
+        assert_eq!(plot_info.y_max, 50.0);
+    }
+
+    #[test]
+    fn bounds_too_distant_to_touch_axis() {
+        let mut cfg = Config::default();
+        cfg.x_column = true;
+        let mut dataset = DataSet::default();
+        let lines = ["-5000 -5000", "-4900 -4900", "-4800 -4800"];
+
+        let mut plot_info = PlotInfo::default();
+
+        read_lines(&cfg, &mut dataset, &lines);
+
+        plot_info.draw_calc_bounds(&dataset);
+
+        dbg!(&plot_info.x_min);
+        dbg!(&plot_info.x_max);
+        dbg!(&plot_info.y_min);
+        dbg!(&plot_info.y_max);
+
+        assert_eq!(plot_info.x_min, -5000.0);
+        assert_eq!(plot_info.x_max, -4800.0);
+        assert_eq!(plot_info.y_min, -5000.0);
+        assert_eq!(plot_info.y_max, -4800.0);
+    }
+
+    #[test]
+    fn bounds_log_basic() {
+        let mut cfg = Config::default();
+        cfg.log_y = true;
+
+        let lines = ["1214", "358", "316", "187", "186", "93", "63", "11"];
+
+        let mut dataset = DataSet::default();
+
+        let mut plot_info = read_lines(&cfg, &mut dataset, &lines);
+
+        plot_info.draw_calc_bounds(&dataset);
+
+        assert_eq!(plot_info.x_min, 0.0);
+        assert_eq!(plot_info.x_max, 7.0);
+
+        assert_eq!(plot_info.y_min, 0.0);
+        // Assert that it's close enough to 7.101
+        assert!((plot_info.y_max - 7.101).abs() < 0.001);
+    }
+
+    #[test]
+    fn bounds_log_distant() {
+        let mut cfg = Config::default();
+        cfg.log_y = true;
+
+        let lines = ["1214", "358", "316", "187", "186"];
+
+        let mut dataset = DataSet::default();
+
+        let mut plot_info = read_lines(&cfg, &mut dataset, &lines);
+
+        plot_info.draw_calc_bounds(&dataset);
+
+        assert_eq!(plot_info.x_min, 0.0);
+        assert_eq!(plot_info.x_max, 4.0);
+
+        assert!((plot_info.y_min - 5.2257).abs() < 0.001);
+        assert!((plot_info.y_max - 7.101).abs() < 0.001);
+    }
+
+    #[test]
+    fn reject_x_range_of_zero() {
+        let cfg = Config::default();
+
+        let lines = ["-3 -2"];
+
+        let mut dataset = DataSet::default();
+
+        let mut plot_info = read_lines(&cfg, &mut dataset, &lines);
+
+        plot_info.draw_calc_bounds(&dataset);
+
+        assert_ne!(plot_info.y_range, 0.0);
+    }
+
+    #[test]
+    fn reject_y_range_of_zero() {
+        let cfg = Config::default();
+
+        let lines = ["0 0", "0 0"];
+
+        let mut dataset = DataSet::default();
+
+        let mut plot_info = read_lines(&cfg, &mut dataset, &lines);
+
+        plot_info.draw_calc_bounds(&dataset);
+
+        assert_ne!(plot_info.y_range, 0.0);
+    }
+}

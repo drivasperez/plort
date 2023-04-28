@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::scale::TransformType;
 
 pub const EMPTY_VALUE: f64 = std::f64::NAN;
 
@@ -10,6 +11,20 @@ impl PartialEq for Point {
         self.0 == other.0 && self.1 == other.1
             || self.0.is_nan() && other.0.is_nan()
             || self.1.is_nan() && other.1.is_nan()
+    }
+}
+
+impl Point {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_nan() || self.1.is_nan()
+    }
+    pub fn scale_transform(&self, transform: TransformType) -> Point {
+        match transform {
+            TransformType::None => Point(self.0, self.1),
+            TransformType::LogX => Point(self.0.ln(), self.1),
+            TransformType::LogY => Point(self.0, self.1.ln()),
+            TransformType::LogXY => Point(self.0.ln(), self.1.ln()),
+        }
     }
 }
 

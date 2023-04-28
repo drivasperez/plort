@@ -43,13 +43,13 @@ fn number_head(c: char) -> bool {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-enum ProcessLineResult {
+pub enum ProcessLineResult {
     Ok,
     Empty,
     Comment,
 }
 
-fn process_line(
+pub fn process_line(
     config: &Config,
     dataset: &mut DataSet,
     line: &str,
@@ -387,5 +387,26 @@ mod test {
                 assert_eq!(dataset.points[i][j], *point);
             }
         }
+    }
+
+    #[test]
+    fn x_column_negative_numbers() {
+        let mut config = Config::default();
+        config.x_column = true;
+        let mut dataset = DataSet::default();
+
+        let line = "-300 -400";
+
+        assert_eq!(
+            ProcessLineResult::Ok,
+            process_line(&config, &mut dataset, line, 0)
+        );
+
+        assert_eq!(dataset.rows, 1);
+        assert_eq!(dataset.columns, 1);
+
+        let exp0_0 = Point(-300.0, -400.0);
+
+        assert_eq!(dataset.points[0][0], exp0_0);
     }
 }
