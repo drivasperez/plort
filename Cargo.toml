@@ -1,6 +1,7 @@
 [package]
 name = "plort"
-description = "A simple command-line plotting tool"
+authors=["Daniel Rivas Perez"]
+description = "A simple command-line chart utility"
 version = "0.1.0"
 edition = "2021"
 

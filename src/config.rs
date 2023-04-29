@@ -2,6 +2,7 @@ use clap::Parser;
 use std::str::FromStr;
 
 #[derive(Parser, Debug, Default)]
+#[clap(version, author, about)]
 pub struct Config {
     #[clap(long = "flip-xy")]
     pub flip_xy: bool,
