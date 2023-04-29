@@ -19,12 +19,26 @@ impl Point {
         self.0.is_nan() || self.1.is_nan()
     }
     pub fn scale_transform(&self, transform: TransformType) -> Point {
-        match transform {
-            TransformType::None => Point(self.0, self.1),
-            TransformType::LogX => Point(self.0.ln(), self.1),
-            TransformType::LogY => Point(self.0, self.1.ln()),
-            TransformType::LogXY => Point(self.0.ln(), self.1.ln()),
-        }
+        let (log_x, log_y) = match transform {
+            TransformType::None => (false, false),
+            TransformType::LogX => (true, false),
+            TransformType::LogY => (false, true),
+            TransformType::LogXY => (true, true),
+        };
+
+        let x = if log_x && self.0 != 0.0 {
+            self.0.ln()
+        } else {
+            self.0
+        };
+
+        let y = if log_y && self.1 != 0.0 {
+            self.1.ln()
+        } else {
+            self.1
+        };
+
+        Point(x, y)
     }
 }
 
