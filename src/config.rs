@@ -55,14 +55,14 @@ impl FromStr for Dimensions {
         let width = w.parse::<usize>().map_err(|e| {
             format!(
                 "Invalid width: {}. Expected an integer value.",
-                e.to_string()
+                e
             )
         })?;
 
         let height = h.parse::<usize>().map_err(|e| {
             format!(
                 "Invalid height: {}. Expected an integer value.",
-                e.to_string()
+                e
             )
         })?;
 

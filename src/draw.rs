@@ -179,9 +179,11 @@ impl Default for PlotInfo {
 }
 
 pub fn draw(config: &Config, dataset: &DataSet) -> anyhow::Result<()> {
-    let mut plot_info = PlotInfo::default();
-    plot_info.log_x = config.log_x;
-    plot_info.log_y = config.log_y;
+    let mut plot_info = PlotInfo {
+        log_x: config.log_x,
+        log_y: config.log_y,
+        ..Default::default()
+    };
 
     plot_info.draw_calc_bounds(dataset);
 
@@ -222,8 +224,7 @@ fn count_points(dataset: &DataSet, plot_info: &PlotInfo, col: usize) -> HashMap<
     let transform = TransformType::new(plot_info.log_x, plot_info.log_y);
     let mut counts = HashMap::new();
 
-    for row in 0..dataset.rows {
-        let point = &points[row];
+    for point in points.iter().take(dataset.rows) {
         if point.0.is_nan() || point.1.is_nan() {
             continue;
         }

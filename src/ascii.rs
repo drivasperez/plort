@@ -4,21 +4,19 @@ use crate::scale::{ScaledPoint, TransformType};
 use crate::types::DataSet;
 
 fn draw_axes(plot_info: &mut PlotInfo, rows: &mut [Vec<char>]) {
-    for i in 0..plot_info.height {
+    for (i, row) in rows.iter_mut().enumerate() {
         let c = if plot_info.draw_y_axis {
             if i % 5 == 0 {
                 '+'
             } else {
                 '|'
             }
+        } else if i % 5 == 0 {
+            '.'
         } else {
-            if i % 5 == 0 {
-                '.'
-            } else {
-                ' '
-            }
+            ' '
         };
-        rows[i as usize][plot_info.x_axis as usize] = c;
+        row[plot_info.x_axis] = c;
     }
 
     for i in 0..plot_info.width {
@@ -28,17 +26,15 @@ fn draw_axes(plot_info: &mut PlotInfo, rows: &mut [Vec<char>]) {
             } else {
                 '─'
             }
+        } else if i % 5 == 0 {
+            '.'
         } else {
-            if i % 5 == 0 {
-                '.'
-            } else {
-                ' '
-            }
+            ' '
         };
-        rows[plot_info.y_axis as usize][i as usize] = c;
+        rows[plot_info.y_axis][i] = c;
     }
 
-    rows[plot_info.y_axis as usize][plot_info.x_axis as usize] = '+';
+    rows[plot_info.y_axis][plot_info.x_axis] = '+';
 }
 
 fn print_header(plot_info: &mut PlotInfo, point_counts: bool, columns: u8) {
@@ -98,9 +94,9 @@ fn plot_points(plot_info: &mut PlotInfo, dataset: &DataSet, rows: &mut [Vec<char
                 if let Some(&count) = count {
                     if count < 10 {
                         // This is not a good idea with unicode, but it works for ASCII
-                        mark = (('0' as u8) + count as u8) as char;
+                        mark = (b'0' + count as u8) as char;
                     } else if count < 36 {
-                        mark = (('a' as u8) + count as u8) as char;
+                        mark = (b'a' + count as u8) as char;
                     } else {
                         mark = '#';
                     }
@@ -113,7 +109,7 @@ fn plot_points(plot_info: &mut PlotInfo, dataset: &DataSet, rows: &mut [Vec<char
 }
 
 fn get_rows(plot_info: &mut PlotInfo) -> Vec<Vec<char>> {
-    let row = vec![' '; plot_info.width as usize];
+    let row = vec![' '; plot_info.width];
     let mut rows = Vec::new();
     for _ in 0..plot_info.height {
         rows.push(row.clone());
