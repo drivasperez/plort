@@ -15,28 +15,67 @@ pub struct Config {
     #[clap(long)]
     pub log_y: bool,
 
-    #[clap(long)]
-    pub width: usize,
-    #[clap(long)]
-    pub height: usize,
+    #[clap(long, short)]
+    pub dimensions: Dimensions,
 
-    #[clap(short, long)]
+    #[clap(short, long, default_value = "dot")]
     pub mode: PlotType,
-    #[clap(short, long = "output")]
+    #[clap(short, long = "output", default_value = "ascii")]
     pub output_type: OutputType,
+
+    #[clap(short = 'A', long, default_value = "true")]
+    pub axis: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Dimensions {
+    pub width: usize,
+    pub height: usize,
+}
+
+impl Default for Dimensions {
+    fn default() -> Self {
+        Dimensions {
+            width: 72,
+            height: 40,
+        }
+    }
+}
+
+impl FromStr for Dimensions {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (w, h) = s.split_once('x').ok_or_else(|| {
+            format!(
+                "Invalid dimensions: {}. Expected format: <width>x<height>",
+                s
+            )
+        })?;
+
+        let width = w.parse::<usize>().map_err(|e| {
+            format!(
+                "Invalid width: {}. Expected an integer value.",
+                e.to_string()
+            )
+        })?;
+
+        let height = h.parse::<usize>().map_err(|e| {
+            format!(
+                "Invalid height: {}. Expected an integer value.",
+                e.to_string()
+            )
+        })?;
+
+        Ok(Dimensions { width, height })
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum PlotType {
+    #[default]
     Dot,
     Line,
     Count,
-}
-
-impl Default for PlotType {
-    fn default() -> Self {
-        PlotType::Dot
-    }
 }
 
 impl FromStr for PlotType {
@@ -52,16 +91,11 @@ impl FromStr for PlotType {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
 pub enum OutputType {
+    #[default]
     Ascii,
     Svg,
-}
-
-impl Default for OutputType {
-    fn default() -> Self {
-        OutputType::Ascii
-    }
 }
 
 impl FromStr for OutputType {

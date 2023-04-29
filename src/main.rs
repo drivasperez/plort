@@ -5,6 +5,7 @@ use draw::draw;
 use input::{read_input, ReadInputStatus};
 use types::DataSet;
 
+mod ascii;
 mod config;
 mod draw;
 mod input;
@@ -16,7 +17,6 @@ const MAX_COLUMNS: u8 = 255;
 fn main() -> anyhow::Result<()> {
     pretty_env_logger::init();
     let config = Config::parse();
-    println!("{:?}", config);
     let mut dataset = DataSet::default();
 
     let mut end_of_stream = false;

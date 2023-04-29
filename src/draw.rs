@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::ascii::ascii_plot;
 use crate::config::{Config, OutputType, PlotType};
 use crate::scale::ScaledPoint;
 use crate::scale::TransformType;
@@ -33,6 +34,33 @@ pub struct PlotInfo {
 }
 
 impl PlotInfo {
+    pub fn draw_calc_axis_pos(&mut self) {
+        self.draw_x_axis = 0.0 >= self.y_min && 0.0 <= self.y_max;
+        self.draw_y_axis = 0.0 >= self.x_min && 0.0 <= self.x_max;
+
+        let mut origin = Point(0.0, 0.0);
+        if !self.draw_y_axis {
+            if 0.0 < self.x_min {
+                origin.0 = self.x_min;
+            } else {
+                origin.0 = self.x_max;
+            }
+        }
+
+        if !self.draw_x_axis {
+            if 0.0 < self.y_min {
+                origin.1 = self.y_min;
+            } else {
+                origin.1 = self.y_max;
+            }
+        }
+
+        let sp = ScaledPoint::new(origin, self, TransformType::new(self.log_x, self.log_y));
+        // XXX Is this safe? SP are signed, but x_axis and y_axis are unsigned.
+        self.x_axis = sp.0 as usize;
+        self.y_axis = sp.1 as usize;
+    }
+
     pub fn draw_calc_bounds(&mut self, dataset: &DataSet) {
         let mut min_point = Point(f64::MAX, f64::MAX);
         let mut max_point = Point(f64::MIN, f64::MIN);
@@ -165,8 +193,8 @@ pub fn draw(config: &Config, dataset: &DataSet) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    plot_info.width = config.width;
-    plot_info.height = config.height;
+    plot_info.width = config.dimensions.width;
+    plot_info.height = config.dimensions.height;
 
     if config.mode == PlotType::Count {
         let mut counters = Vec::new();
@@ -178,15 +206,11 @@ pub fn draw(config: &Config, dataset: &DataSet) -> anyhow::Result<()> {
     }
 
     match config.output_type {
-        OutputType::Ascii => draw_ascii(config, dataset, &plot_info),
+        OutputType::Ascii => ascii_plot(config, dataset, &mut plot_info),
         OutputType::Svg => draw_svg(config, dataset, &plot_info),
     }
 
     Ok(())
-}
-
-fn draw_ascii(_config: &Config, _dataset: &DataSet, _plot_info: &PlotInfo) {
-    todo!()
 }
 
 fn draw_svg(_config: &Config, _dataset: &DataSet, _plot_info: &PlotInfo) {
@@ -219,21 +243,6 @@ fn count_points(dataset: &DataSet, plot_info: &PlotInfo, col: usize) -> HashMap<
 mod test {
     use super::*;
     use crate::input::{process_line, ProcessLineResult};
-
-    fn init_plot_info(plot_info: &mut PlotInfo) -> TransformType {
-        plot_info.x_range = plot_info.x_max - plot_info.x_min;
-        plot_info.y_range = plot_info.y_max - plot_info.y_min;
-
-        if plot_info.width == 0 {
-            plot_info.width = 72;
-        }
-
-        if plot_info.height == 0 {
-            plot_info.height = 40;
-        }
-
-        TransformType::new(plot_info.log_x, plot_info.log_y)
-    }
 
     fn read_lines(cfg: &Config, dataset: &mut DataSet, lines: &[&str]) -> PlotInfo {
         let mut plot_info = PlotInfo::default();

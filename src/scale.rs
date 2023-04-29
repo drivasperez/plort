@@ -1,7 +1,5 @@
 use crate::{draw::PlotInfo, types::Point};
 
-const CMP_PAD: f64 = 0.001;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ScaledPoint(pub i32, pub i32);
 
