@@ -209,14 +209,10 @@ pub fn draw(config: &Config, dataset: &DataSet) -> anyhow::Result<()> {
 
     match config.output_type {
         OutputType::Ascii => ascii_plot(config, dataset, &mut plot_info),
-        OutputType::Svg => draw_svg(config, dataset, &plot_info),
+        OutputType::Svg => todo!(),
     }
 
     Ok(())
-}
-
-fn draw_svg(_config: &Config, _dataset: &DataSet, _plot_info: &PlotInfo) {
-    todo!()
 }
 
 fn count_points(dataset: &DataSet, plot_info: &PlotInfo, col: usize) -> HashMap<(i32, i32), u32> {

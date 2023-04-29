@@ -15,7 +15,7 @@ pub struct Config {
     #[clap(long)]
     pub log_y: bool,
 
-    #[clap(long, short)]
+    #[clap(long, short, default_value = "80x40")]
     pub dimensions: Dimensions,
 
     #[clap(short, long, default_value = "dot")]
@@ -25,6 +25,9 @@ pub struct Config {
 
     #[clap(short = 'A', long, default_value = "true")]
     pub axis: bool,
+
+    #[clap(long = "colors", default_value = "bank-wong")]
+    pub color_scheme: ColorScheme,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -52,19 +55,13 @@ impl FromStr for Dimensions {
             )
         })?;
 
-        let width = w.parse::<usize>().map_err(|e| {
-            format!(
-                "Invalid width: {}. Expected an integer value.",
-                e
-            )
-        })?;
+        let width = w
+            .parse::<usize>()
+            .map_err(|e| format!("Invalid width: {}. Expected an integer value.", e))?;
 
-        let height = h.parse::<usize>().map_err(|e| {
-            format!(
-                "Invalid height: {}. Expected an integer value.",
-                e
-            )
-        })?;
+        let height = h
+            .parse::<usize>()
+            .map_err(|e| format!("Invalid height: {}. Expected an integer value.", e))?;
 
         Ok(Dimensions { width, height })
     }
@@ -109,3 +106,69 @@ impl FromStr for OutputType {
         }
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct ColorScheme {
+    axis: (u8, u8, u8),
+    series: &'static [(u8, u8, u8)],
+}
+
+impl ColorScheme {
+    pub fn series_color(&self, col: u8) -> (u8, u8, u8) {
+        self.series[col as usize % self.series.len()]
+    }
+
+    pub fn axis_color(&self) -> (u8, u8, u8) {
+        self.axis
+    }
+}
+
+impl FromStr for ColorScheme {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "bank-wong" => Ok(BANK_WONG_COLOR_SCHEME),
+            "mono-light" => Ok(MONO_LIGHT_SCHEME),
+            "mono-dark" => Ok(MONO_DARK_SCHEME),
+
+            _ => Err(format!("Unknown color scheme: {}", s)),
+        }
+    }
+}
+
+impl Default for ColorScheme {
+    fn default() -> Self {
+        BANK_WONG_COLOR_SCHEME
+    }
+}
+
+pub const BANK_WONG_COLOR_SCHEME: ColorScheme = {
+    ColorScheme {
+        axis: (123, 123, 125),
+        series: &[
+            (0, 114, 178),
+            (230, 159, 0),
+            (86, 180, 233),
+            (0, 158, 115),
+            (240, 228, 66),
+            (0, 0, 0),
+            (213, 94, 0),
+            (204, 121, 167),
+        ],
+    }
+};
+
+pub const MONO_LIGHT_SCHEME: ColorScheme = {
+    ColorScheme {
+        axis: (255, 255, 255),
+        series: &[(255, 255, 255)],
+    }
+};
+
+pub const MONO_DARK_SCHEME: ColorScheme = {
+    ColorScheme {
+        axis: (0, 0, 0),
+        series: &[(0, 0, 0)],
+    }
+};

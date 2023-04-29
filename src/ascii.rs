@@ -2,42 +2,45 @@ use crate::config::{Config, PlotType};
 use crate::draw::PlotInfo;
 use crate::scale::{ScaledPoint, TransformType};
 use crate::types::DataSet;
+use colored::Colorize;
 
-fn draw_axes(plot_info: &mut PlotInfo, rows: &mut [Vec<char>]) {
+fn draw_axes(config: &Config, plot_info: &mut PlotInfo, rows: &mut [Vec<String>]) {
+    let (r, g, b) = config.color_scheme.axis_color();
     for (i, row) in rows.iter_mut().enumerate() {
         let c = if plot_info.draw_y_axis {
             if i % 5 == 0 {
-                '+'
+                "+"
             } else {
-                '|'
+                "|"
             }
         } else if i % 5 == 0 {
-            '.'
+            "."
         } else {
-            ' '
+            " "
         };
-        row[plot_info.x_axis] = c;
+        row[plot_info.x_axis] = c.truecolor(r, g, b).to_string();
     }
 
     for i in 0..plot_info.width {
         let c = if plot_info.draw_x_axis {
             if i % 5 == 0 {
-                '+'
+                "+"
             } else {
-                '─'
+                "─"
             }
         } else if i % 5 == 0 {
-            '.'
+            "."
         } else {
-            ' '
+            " "
         };
-        rows[plot_info.y_axis][i] = c;
+        // rows[plot_info.y_axis][i] = c.truecolor(211, 219, 216).to_string();
+        rows[plot_info.y_axis][i] = c.truecolor(r, g, b).to_string();
     }
 
-    rows[plot_info.y_axis][plot_info.x_axis] = '+';
+    rows[plot_info.y_axis][plot_info.x_axis] = "+".truecolor(r, g, b).to_string();
 }
 
-fn print_header(plot_info: &mut PlotInfo, point_counts: bool, columns: u8) {
+fn print_header(config: &Config, plot_info: &mut PlotInfo, point_counts: bool, columns: u8) {
     if plot_info.log_x {
         print!(
             "    x: log [{} - {}]",
@@ -61,7 +64,10 @@ fn print_header(plot_info: &mut PlotInfo, point_counts: bool, columns: u8) {
     if !point_counts {
         print!(" -- ");
         let count_key = (0..columns)
-            .map(|i| col_mark(i).to_string())
+            .map(|i| {
+                let (r, g, b) = config.color_scheme.series_color(i);
+                col_mark(i).to_string().truecolor(r, g, b).to_string()
+            })
             .collect::<Vec<_>>()
             .join(", ");
         print!("{}", count_key);
@@ -79,7 +85,12 @@ fn col_mark(col: u8) -> char {
     }
 }
 
-fn plot_points(plot_info: &mut PlotInfo, dataset: &DataSet, rows: &mut [Vec<char>]) {
+fn plot_points(
+    config: &Config,
+    plot_info: &mut PlotInfo,
+    dataset: &DataSet,
+    rows: &mut [Vec<String>],
+) {
     for c in 0..dataset.columns {
         for r in 0..dataset.rows {
             let p = dataset.points[c as usize][r];
@@ -103,13 +114,17 @@ fn plot_points(plot_info: &mut PlotInfo, dataset: &DataSet, rows: &mut [Vec<char
                 }
             }
 
-            rows[sp.1 as usize][sp.0 as usize] = mark;
+            let (r, g, b) = config.color_scheme.series_color(c);
+            let mark = mark.to_string().truecolor(r, g, b).to_string();
+
+            rows[sp.1 as usize][sp.0 as usize] = mark.to_string();
         }
     }
 }
 
-fn get_rows(plot_info: &mut PlotInfo) -> Vec<Vec<char>> {
-    let row = vec![' '; plot_info.width];
+fn get_rows(plot_info: &mut PlotInfo) -> Vec<Vec<String>> {
+    let s = String::from(" ");
+    let row = vec![s.clone(); plot_info.width];
     let mut rows = Vec::new();
     for _ in 0..plot_info.height {
         rows.push(row.clone());
@@ -122,13 +137,18 @@ pub fn ascii_plot(config: &Config, dataset: &DataSet, plot_info: &mut PlotInfo) 
     let mut rows = get_rows(plot_info);
     if config.axis {
         plot_info.draw_calc_axis_pos();
-        draw_axes(plot_info, &mut rows);
+        draw_axes(config, plot_info, &mut rows);
     }
 
-    print_header(plot_info, config.mode == PlotType::Count, dataset.columns);
-    plot_points(plot_info, dataset, &mut rows);
+    print_header(
+        config,
+        plot_info,
+        config.mode == PlotType::Count,
+        dataset.columns,
+    );
+    plot_points(config, plot_info, dataset, &mut rows);
 
     for row in &rows {
-        println!("{}", row.iter().collect::<String>());
+        println!("{}", row.join(""));
     }
 }
