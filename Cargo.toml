@@ -4,6 +4,7 @@ authors=["Daniel Rivas Perez"]
 description = "A simple command-line chart utility"
 version = "0.1.0"
 edition = "2021"
+license = "ISC"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
