@@ -218,7 +218,17 @@ pub fn draw(config: &Config, dataset: &DataSet) -> anyhow::Result<()> {
                 bg_color: "black".into(),
                 border_color: "white".into(),
                 axis_color: "lightgray".into(),
-                colors: vec![],
+                colors: vec![
+                    "#377eb8".into(),
+                    "#e41a1c".into(),
+                    "#4daf4a".into(),
+                    "#984ea3".into(),
+                    "#ff7f00".into(),
+                    "#ffff33".into(),
+                    "#a65628".into(),
+                    "#f781bf".into(),
+                    "#999999".into(),
+                ],
             };
 
             svg_plot(config, &mut plot_info, dataset, &theme);

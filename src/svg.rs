@@ -140,7 +140,7 @@ fn print_axis(plot_info: &PlotInfo, theme: &SvgTheme) {
     if plot_info.draw_y_axis {
         // Y-axis
         println!(
-            r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="{}" stroke-dasharray="2.5"/n>"#,
+            r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="{}" stroke-dasharray="2.5"/>"#,
             plot_info.x_axis,
             0,
             plot_info.x_axis,
@@ -161,7 +161,7 @@ fn print_axis(plot_info: &PlotInfo, theme: &SvgTheme) {
         let mut hy = plot_info.y_axis as f64 + y_to;
         while hy < plot_info.height as f64 {
             println!(
-                r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="1" /n>"#,
+                r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="1" />"#,
                 x0, hy, x1, hy, theme.axis_color
             );
             hy += y_to;
@@ -169,7 +169,7 @@ fn print_axis(plot_info: &PlotInfo, theme: &SvgTheme) {
         let mut hy = plot_info.y_axis as f64 - y_to;
         while hy > 0.0 {
             println!(
-                r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="1" /n>"#,
+                r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="1" />"#,
                 x0, hy, x1, hy, theme.axis_color
             );
             hy -= y_to;
@@ -179,7 +179,7 @@ fn print_axis(plot_info: &PlotInfo, theme: &SvgTheme) {
     if plot_info.draw_x_axis {
         // X-axis
         println!(
-            r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="{}" stroke-dasharray="2.5" /n>"#,
+            r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="{}" stroke-dasharray="2.5" />"#,
             0,
             plot_info.y_axis,
             plot_info.width,
@@ -200,7 +200,7 @@ fn print_axis(plot_info: &PlotInfo, theme: &SvgTheme) {
         let mut wx = plot_info.x_axis as f64 + x_to;
         while wx < plot_info.width as f64 {
             println!(
-                r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="1" /n>"#,
+                r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="1" />"#,
                 wx, y0, wx, y1, theme.axis_color
             );
             wx += x_to;
@@ -208,7 +208,7 @@ fn print_axis(plot_info: &PlotInfo, theme: &SvgTheme) {
         let mut wx = plot_info.x_axis as f64 - x_to;
         while wx > 0.0 {
             println!(
-                r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="1" /n>"#,
+                r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="1" />"#,
                 wx, y0, wx, y1, theme.axis_color
             );
             wx -= x_to;
@@ -227,7 +227,7 @@ fn regression_line(plot_info: &PlotInfo, color: &str, regression: (f64, f64)) {
     let p1 = ScaledPoint::new(p1, plot_info, crate::scale::TransformType::None);
 
     println!(
-        r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="{}" stroke-dasharray="5" /n>"#,
+        r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="{}" stroke-dasharray="5" />"#,
         p0.x(),
         p0.y(),
         p1.x(),
