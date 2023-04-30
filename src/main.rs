@@ -9,6 +9,7 @@ mod ascii;
 mod config;
 mod draw;
 mod input;
+mod regression;
 mod scale;
 mod types;
 
