@@ -42,6 +42,14 @@ impl ScaledPoint {
 
         ScaledPoint(ox, oy)
     }
+
+    pub fn x(&self) -> i32 {
+        self.0
+    }
+
+    pub fn y(&self) -> i32 {
+        self.1
+    }
 }
 
 #[cfg(test)]

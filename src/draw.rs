@@ -4,6 +4,7 @@ use crate::ascii::ascii_plot;
 use crate::config::{Config, OutputType, PlotType};
 use crate::scale::ScaledPoint;
 use crate::scale::TransformType;
+use crate::svg::{svg_plot, SvgTheme};
 use crate::types::DataSet;
 use crate::types::Point;
 
@@ -209,7 +210,19 @@ pub fn draw(config: &Config, dataset: &DataSet) -> anyhow::Result<()> {
 
     match config.output_type {
         OutputType::Ascii => ascii_plot(config, dataset, &mut plot_info),
-        OutputType::Svg => todo!(),
+        OutputType::Svg => {
+            let theme: SvgTheme = SvgTheme {
+                line_width: 2.0,
+                border_width: 2.0,
+                axis_width: 2.0,
+                bg_color: "black".into(),
+                border_color: "white".into(),
+                axis_color: "lightgray".into(),
+                colors: vec![],
+            };
+
+            svg_plot(config, &mut plot_info, dataset, &theme);
+        }
     }
 
     Ok(())

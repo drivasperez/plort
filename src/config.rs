@@ -15,9 +15,14 @@ pub struct Config {
     pub log_x: bool,
     #[clap(long)]
     pub log_y: bool,
+    #[clap(long)]
+    pub log_count: bool,
 
     #[clap(long, short, default_value = "80x40")]
     pub dimensions: Dimensions,
+
+    #[clap(long, default_value = "true")]
+    pub regression: bool,
 
     #[clap(short, long, default_value = "dot")]
     pub mode: PlotType,

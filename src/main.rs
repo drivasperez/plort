@@ -11,6 +11,7 @@ mod draw;
 mod input;
 mod regression;
 mod scale;
+mod svg;
 mod types;
 
 const MAX_COLUMNS: u8 = 255;
