@@ -18,7 +18,7 @@ pub struct SvgTheme {
 impl SvgTheme {
     pub fn get_color(&self, col: u8) -> &str {
         self.colors.get(col as usize).unwrap_or(
-            &self
+            self
                 .colors
                 .last()
                 .expect("SvgTheme::get_color: no colors defined"),
@@ -57,7 +57,7 @@ pub fn svg_plot(config: &Config, plot_info: &mut PlotInfo, dataset: &DataSet, th
                     begin_polyline();
                 }
 
-                let sp = ScaledPoint::new(*p, &plot_info, transform);
+                let sp = ScaledPoint::new(*p, plot_info, transform);
                 polyline_point(sp.x(), sp.y());
             }
 
@@ -66,7 +66,7 @@ pub fn svg_plot(config: &Config, plot_info: &mut PlotInfo, dataset: &DataSet, th
             }
         } else {
             for p in column {
-                let sp = ScaledPoint::new(*p, &plot_info, transform);
+                let sp = ScaledPoint::new(*p, plot_info, transform);
                 if p.is_empty() {
                     continue;
                 }
@@ -82,7 +82,7 @@ pub fn svg_plot(config: &Config, plot_info: &mut PlotInfo, dataset: &DataSet, th
                     };
                     print_circle(sp.x(), sp.y(), r, color);
                 } else {
-                    print_circle(sp.x(), sp.y(), point_size as f64, color);
+                    print_circle(sp.x(), sp.y(), point_size, color);
                 }
             }
         }

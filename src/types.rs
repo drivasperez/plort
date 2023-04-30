@@ -23,14 +23,6 @@ impl Point {
         self.1
     }
 
-    pub fn x_mut(&mut self) -> &mut f64 {
-        &mut self.0
-    }
-
-    pub fn y_mut(&mut self) -> &mut f64 {
-        &mut self.1
-    }
-
     pub fn is_empty(&self) -> bool {
         self.0.is_nan() || self.1.is_nan()
     }
