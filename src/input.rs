@@ -1,7 +1,6 @@
 use crate::config::Config;
 use crate::types::{DataSet, Point, EMPTY_VALUE};
 use anyhow::Context;
-use std::io;
 use std::io::prelude::*;
 #[derive(Debug)]
 pub enum ReadInputStatus {
@@ -9,11 +8,14 @@ pub enum ReadInputStatus {
     DatasetComplete,
 }
 
-pub fn read_input(config: &Config, dataset: &mut DataSet) -> anyhow::Result<ReadInputStatus> {
+pub fn read_input(
+    config: &Config,
+    dataset: &mut DataSet,
+    reader: &mut impl BufRead,
+) -> anyhow::Result<ReadInputStatus> {
     let mut row_count = 0;
-    let stdin = io::stdin().lock();
 
-    for line in stdin.lines() {
+    for line in reader.lines() {
         let line = line.context("Read line from stdin")?;
 
         let res = process_line(config, dataset, &line, row_count);

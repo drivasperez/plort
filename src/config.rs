@@ -4,6 +4,8 @@ use std::str::FromStr;
 #[derive(Parser, Debug, Default)]
 #[clap(version, author, about)]
 pub struct Config {
+    pub filename: Option<String>,
+
     #[clap(long = "flip-xy")]
     pub flip_xy: bool,
     #[clap(short, long)]
