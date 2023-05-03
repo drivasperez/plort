@@ -1,12 +1,15 @@
 use std::collections::HashMap;
 
-use crate::ascii::ascii_plot;
 use crate::config::{Config, OutputType, PlotType};
 use crate::scale::ScaledPoint;
 use crate::scale::TransformType;
-use crate::svg::{svg_plot, SvgTheme};
 use crate::types::DataSet;
 use crate::types::Point;
+use svg::{svg_plot, SvgTheme};
+use text::ascii::ascii_plot;
+
+mod svg;
+mod text;
 
 const CROSS_PAD: f64 = 2.0;
 

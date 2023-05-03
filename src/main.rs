@@ -7,14 +7,13 @@ use draw::draw;
 use input::{read_input, ReadInputStatus};
 use types::DataSet;
 
-mod ascii;
 mod config;
 mod draw;
 mod input;
 mod regression;
 mod scale;
-mod svg;
 mod types;
+mod utf;
 
 const MAX_COLUMNS: u8 = 255;
 
