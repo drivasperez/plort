@@ -100,6 +100,7 @@ impl FromStr for PlotType {
 pub enum OutputType {
     #[default]
     Ascii,
+    Braille,
     Svg,
 }
 
@@ -109,6 +110,7 @@ impl FromStr for OutputType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "ascii" => Ok(OutputType::Ascii),
+            "braile" => Ok(OutputType::Braille),
             "svg" => Ok(OutputType::Svg),
             _ => Err(format!("Unknown output type: {}", s)),
         }

@@ -7,6 +7,7 @@ use crate::types::DataSet;
 use crate::types::Point;
 use svg::{svg_plot, SvgTheme};
 use text::ascii::ascii_plot;
+use text::braille::braille_plot;
 
 mod svg;
 mod text;
@@ -213,6 +214,7 @@ pub fn draw(config: &Config, dataset: &DataSet) -> anyhow::Result<()> {
 
     match config.output_type {
         OutputType::Ascii => ascii_plot(config, dataset, &mut plot_info),
+        OutputType::Braille => braille_plot(config, dataset, &mut plot_info),
         OutputType::Svg => {
             let theme: SvgTheme = SvgTheme {
                 line_width: 2.0,
