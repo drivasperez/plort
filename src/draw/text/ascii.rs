@@ -122,7 +122,7 @@ fn plot_points(
     }
 }
 
-fn get_rows(plot_info: &mut PlotInfo) -> Vec<Vec<String>> {
+fn get_rows(plot_info: &PlotInfo) -> Vec<Vec<String>> {
     let s = String::from(" ");
     let row = vec![s; plot_info.width];
     let mut rows = Vec::new();
