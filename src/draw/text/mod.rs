@@ -1,5 +1,6 @@
 pub mod ascii;
 pub mod braille;
+mod braille_point;
 
 // When drawing a text chart, we need to:
 // - Calculate the dimensions of the chart based on the width of the dataset and the
