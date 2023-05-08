@@ -39,7 +39,7 @@ pub struct PlotInfo {
 }
 
 impl PlotInfo {
-    pub fn draw_calc_axis_pos(&mut self) {
+    pub fn calc_axis_pos(&mut self) {
         self.draw_x_axis = 0.0 >= self.y_min && 0.0 <= self.y_max;
         self.draw_y_axis = 0.0 >= self.x_min && 0.0 <= self.x_max;
 
@@ -66,7 +66,7 @@ impl PlotInfo {
         self.y_axis = sp.1 as usize;
     }
 
-    pub fn draw_calc_bounds(&mut self, dataset: &DataSet) {
+    pub fn calc_bounds(&mut self, dataset: &DataSet) -> anyhow::Result<()> {
         let mut min_point = Point(f64::MAX, f64::MAX);
         let mut max_point = Point(f64::MIN, f64::MIN);
 
@@ -78,11 +78,11 @@ impl PlotInfo {
                 }
 
                 if self.log_x && point.0 <= 0.0 {
-                    panic!("Log scale requires positive values");
+                    anyhow::bail!("Log scale requires positive X values");
                 }
 
                 if self.log_y && point.1 <= 0.0 {
-                    panic!("Log scale requires positive values");
+                    anyhow::bail!("Log scale requires positive Y values");
                 }
 
                 let x = point.0;
@@ -148,6 +148,8 @@ impl PlotInfo {
                 self.y_range = -self.y_min;
             }
         }
+
+        Ok(())
     }
 
     fn all_empty_points(&self) -> bool {
@@ -190,7 +192,7 @@ pub fn draw(config: &Config, dataset: &DataSet) -> anyhow::Result<()> {
         ..Default::default()
     };
 
-    plot_info.draw_calc_bounds(dataset);
+    plot_info.calc_bounds(dataset)?;
 
     if plot_info.all_empty_points() {
         return Ok(());
@@ -216,6 +218,7 @@ pub fn draw(config: &Config, dataset: &DataSet) -> anyhow::Result<()> {
         OutputType::Ascii => ascii_plot(config, dataset, &mut plot_info),
         OutputType::Braille => braille_plot(config, dataset, &mut plot_info),
         OutputType::Svg => {
+            // TODO: Configurable theme
             let theme: SvgTheme = SvgTheme {
                 line_width: 2.0,
                 border_width: 2.0,
@@ -292,7 +295,7 @@ mod test {
 
         read_lines(&cfg, &mut dataset, &lines);
 
-        plot_info.draw_calc_bounds(&dataset);
+        plot_info.calc_bounds(&dataset).unwrap();
 
         dbg!(&plot_info.x_min);
         dbg!(&plot_info.x_max);
@@ -315,7 +318,7 @@ mod test {
 
         read_lines(&cfg, &mut dataset, &lines);
 
-        plot_info.draw_calc_bounds(&dataset);
+        plot_info.calc_bounds(&dataset).unwrap();
 
         dbg!(&plot_info.x_min);
         dbg!(&plot_info.x_max);
@@ -339,7 +342,7 @@ mod test {
 
         read_lines(&cfg, &mut dataset, &lines);
 
-        plot_info.draw_calc_bounds(&dataset);
+        plot_info.calc_bounds(&dataset).unwrap();
 
         dbg!(&plot_info.x_min);
         dbg!(&plot_info.x_max);
@@ -363,7 +366,7 @@ mod test {
 
         read_lines(&cfg, &mut dataset, &lines);
 
-        plot_info.draw_calc_bounds(&dataset);
+        plot_info.calc_bounds(&dataset).unwrap();
 
         dbg!(&plot_info.x_min);
         dbg!(&plot_info.x_max);
@@ -388,7 +391,7 @@ mod test {
 
         read_lines(&cfg, &mut dataset, &lines);
 
-        plot_info.draw_calc_bounds(&dataset);
+        plot_info.calc_bounds(&dataset).unwrap();
 
         dbg!(&plot_info.x_min);
         dbg!(&plot_info.x_max);
@@ -412,7 +415,7 @@ mod test {
 
         read_lines(&cfg, &mut dataset, &lines);
 
-        plot_info.draw_calc_bounds(&dataset);
+        plot_info.calc_bounds(&dataset).unwrap();
 
         dbg!(&plot_info.x_min);
         dbg!(&plot_info.x_max);
@@ -436,7 +439,7 @@ mod test {
 
         let mut plot_info = read_lines(&cfg, &mut dataset, &lines);
 
-        plot_info.draw_calc_bounds(&dataset);
+        plot_info.calc_bounds(&dataset).unwrap();
 
         assert_eq!(plot_info.x_min, 0.0);
         assert_eq!(plot_info.x_max, 7.0);
@@ -457,7 +460,7 @@ mod test {
 
         let mut plot_info = read_lines(&cfg, &mut dataset, &lines);
 
-        plot_info.draw_calc_bounds(&dataset);
+        plot_info.calc_bounds(&dataset).unwrap();
 
         assert_eq!(plot_info.x_min, 0.0);
         assert_eq!(plot_info.x_max, 4.0);
@@ -476,7 +479,7 @@ mod test {
 
         let mut plot_info = read_lines(&cfg, &mut dataset, &lines);
 
-        plot_info.draw_calc_bounds(&dataset);
+        plot_info.calc_bounds(&dataset).unwrap();
 
         assert_ne!(plot_info.y_range, 0.0);
     }
@@ -491,7 +494,7 @@ mod test {
 
         let mut plot_info = read_lines(&cfg, &mut dataset, &lines);
 
-        plot_info.draw_calc_bounds(&dataset);
+        plot_info.calc_bounds(&dataset).unwrap();
 
         assert_ne!(plot_info.y_range, 0.0);
     }

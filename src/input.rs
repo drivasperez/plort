@@ -95,10 +95,6 @@ pub fn process_line(
                 let point = Point(cur_x, v);
                 dataset.add_pair(config, row_count, col, point);
                 col += 1;
-
-                if col == crate::MAX_COLUMNS {
-                    break;
-                }
             }
         }
     }

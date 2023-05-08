@@ -26,6 +26,8 @@ impl Point {
     pub fn is_empty(&self) -> bool {
         self.0.is_nan() || self.1.is_nan()
     }
+
+    /// Scale the point according to the given log transform.
     pub fn scale_transform(&self, transform: TransformType) -> Point {
         let (log_x, log_y) = match transform {
             TransformType::None => (false, false),
@@ -52,8 +54,7 @@ impl Point {
 
 #[derive(Debug)]
 pub struct DataSet {
-    pub row_ceil: u8,
-    pub columns: u8,
+    pub columns: usize,
     pub rows: usize,
     pub points: Vec<Vec<Point>>, // p[column][row]
 }
@@ -61,7 +62,6 @@ pub struct DataSet {
 impl Default for DataSet {
     fn default() -> Self {
         DataSet {
-            row_ceil: 1,
             columns: 0,
             rows: 0,
             points: Vec::new(),
@@ -70,7 +70,7 @@ impl Default for DataSet {
 }
 
 impl DataSet {
-    pub fn add_pair(&mut self, config: &Config, row: usize, col: u8, point: Point) {
+    pub fn add_pair(&mut self, config: &Config, row: usize, col: usize, point: Point) {
         // Add columns, padding with None as necessary
         while col >= self.columns {
             let mut v = Vec::with_capacity(self.rows);

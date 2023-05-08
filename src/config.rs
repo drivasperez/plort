@@ -124,8 +124,8 @@ pub struct ColorScheme {
 }
 
 impl ColorScheme {
-    pub fn series_color(&self, col: u8) -> (u8, u8, u8) {
-        self.series[col as usize % self.series.len()]
+    pub fn series_color(&self, col: usize) -> (u8, u8, u8) {
+        self.series[col % self.series.len()]
     }
 
     pub fn axis_color(&self) -> (u8, u8, u8) {

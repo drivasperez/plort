@@ -6,7 +6,7 @@ use crate::DataSet;
 pub fn braille_plot(config: &Config, dataset: &DataSet, plot_info: &mut PlotInfo) {
     let mut rows = get_rows(plot_info);
     if config.axis {
-        plot_info.draw_calc_axis_pos();
+        plot_info.calc_axis_pos();
         draw_axes(config, plot_info, &mut rows);
     }
 
@@ -40,7 +40,7 @@ fn draw_axes(config: &Config, plot_info: &PlotInfo, rows: &mut [Vec<String>]) {
     todo!()
 }
 
-fn print_header(config: &Config, plot_info: &PlotInfo, count_mode: bool, columns: u8) {
+fn print_header(config: &Config, plot_info: &PlotInfo, count_mode: bool, columns: usize) {
     todo!()
 }
 

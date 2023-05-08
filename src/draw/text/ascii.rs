@@ -72,7 +72,7 @@ impl<'a> AsciiPlot<'a> {
     }
 
     fn draw_axes(&mut self) {
-        self.plot_info.draw_calc_axis_pos();
+        self.plot_info.calc_axis_pos();
 
         let (r, g, b) = self.config.color_scheme.axis_color();
         for (i, row) in self.rows.iter_mut().enumerate() {
@@ -154,9 +154,9 @@ impl<'a> AsciiPlot<'a> {
 
 const COL_MARKS: &[u8; 33] = b"#@*^!~%ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-fn col_mark(col: u8) -> char {
-    if col < COL_MARKS.len() as u8 {
-        COL_MARKS[col as usize] as char
+fn col_mark(col: usize) -> char {
+    if col < COL_MARKS.len() {
+        COL_MARKS[col] as char
     } else {
         '*'
     }

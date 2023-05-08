@@ -16,10 +16,9 @@ pub struct SvgTheme {
 }
 
 impl SvgTheme {
-    pub fn get_color(&self, col: u8) -> &str {
-        self.colors.get(col as usize).unwrap_or(
-            self
-                .colors
+    pub fn get_color(&self, col: usize) -> &str {
+        self.colors.get(col).unwrap_or(
+            self.colors
                 .last()
                 .expect("SvgTheme::get_color: no colors defined"),
         )
@@ -31,7 +30,7 @@ pub fn svg_plot(config: &Config, plot_info: &mut PlotInfo, dataset: &DataSet, th
     print_frame(plot_info.width, plot_info.height, theme);
 
     if config.axis {
-        plot_info.draw_calc_axis_pos();
+        plot_info.calc_axis_pos();
         print_axis(plot_info, theme);
     }
 
