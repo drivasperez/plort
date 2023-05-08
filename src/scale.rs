@@ -1,4 +1,7 @@
-use crate::{draw::PlotInfo, types::Point};
+use crate::{
+    draw::{Plot, PlotInfo},
+    types::Point,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ScaledPoint(pub i32, pub i32);
@@ -23,6 +26,28 @@ impl TransformType {
 }
 
 impl ScaledPoint {
+    pub fn new_from_plot(point: Point, plot_info: &Plot, transform: TransformType) -> Self {
+        let pad = 2;
+        let Point(x, y) = point.scale_transform(transform);
+        debug_assert!(x >= plot_info.x_min() - f64::EPSILON);
+        debug_assert!(x <= plot_info.x_max() + f64::EPSILON);
+
+        let cell_w: f64 = plot_info.x_range() / (plot_info.width() as f64);
+        let cell_h: f64 = plot_info.y_range() / (plot_info.height() as f64);
+
+        let ox = ((plot_info.width() as f64 - pad as f64)
+            * ((x - plot_info.x_min() + cell_w / 2.0) / plot_info.x_range()))
+            as i32;
+
+        let oy = ((plot_info.height() as f64 - pad as f64)
+            * ((y - plot_info.y_min() + cell_h / 2.0) / plot_info.y_range()))
+            as i32;
+
+        let oy = plot_info.height() as i32 - oy - 1;
+
+        ScaledPoint(ox, oy)
+    }
+
     pub fn new(point: Point, plot_info: &PlotInfo, transform: TransformType) -> Self {
         let pad = 2;
         let Point(x, y) = point.scale_transform(transform);

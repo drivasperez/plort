@@ -14,6 +14,189 @@ mod text;
 
 const CROSS_PAD: f64 = 2.0;
 
+pub struct Plot<'a> {
+    dataset: &'a DataSet,
+    config: &'a Config,
+    x_min: f64,
+    x_max: f64,
+    y_min: f64,
+    y_max: f64,
+}
+
+impl<'a> Plot<'a> {
+    pub fn new(dataset: &'a DataSet, config: &'a Config) -> anyhow::Result<Self> {
+        let mut min_point = Point(f64::MAX, f64::MAX);
+        let mut max_point = Point(f64::MIN, f64::MIN);
+
+        for col in 0..dataset.columns {
+            for row in 0..dataset.rows {
+                let point = dataset.points[col as usize][row];
+                if point.is_empty() {
+                    continue;
+                }
+
+                if config.log_x && point.0 <= 0.0 {
+                    anyhow::bail!("Log scale requires positive X values");
+                }
+
+                if config.log_y && point.1 <= 0.0 {
+                    anyhow::bail!("Log scale requires positive Y values");
+                }
+
+                let x = point.0;
+                let y = point.1;
+
+                if x < min_point.0 {
+                    min_point.0 = x;
+                }
+                if x > max_point.0 {
+                    max_point.0 = x;
+                }
+
+                if y < min_point.1 {
+                    min_point.1 = y;
+                }
+                if y > max_point.1 {
+                    max_point.1 = y;
+                }
+            }
+        }
+
+        let transform = TransformType::new(config.log_x, config.log_y);
+        let min_point = min_point.scale_transform(transform);
+        let mut max_point = max_point.scale_transform(transform);
+
+        if min_point.0 == max_point.0 {
+            max_point.0 += 1.0;
+        }
+
+        if min_point.1 == max_point.1 {
+            max_point.1 += 1.0;
+        }
+
+        let mut x_min = min_point.0;
+        let mut x_max = max_point.0;
+        let mut y_min = min_point.1;
+        let mut y_max = max_point.1;
+
+        let x_range = x_max - x_min;
+        let y_range = y_max - y_min;
+
+        let crosses_x_axis = x_min <= 0.0 && x_max >= 0.0;
+        let crosses_y_axis = y_min <= 0.0 && y_max >= 0.0;
+
+        // If the data does not cross the x or y axis, we can
+        // clamp the plot's axis to zero.
+        if !crosses_x_axis {
+            if 0.0 < x_min && 0.0 > x_min - x_range * CROSS_PAD {
+                x_min = 0.0;
+            } else if 0.0 > x_max && 0.0 < x_max + x_range * CROSS_PAD {
+                x_max = 0.0;
+            }
+        }
+
+        if !crosses_y_axis {
+            if 0.0 < y_min && 0.0 > y_min - y_range * CROSS_PAD {
+                y_min = 0.0;
+            } else if 0.0 > y_max && 0.0 < y_max + y_range * CROSS_PAD {
+                y_max = 0.0;
+            }
+        }
+
+        if x_min == f64::MAX || y_min == f64::MAX {
+            anyhow::bail!("No data to plot");
+        }
+
+        if x_min == x_max || y_min == y_max {
+            anyhow::bail!("Insufficient range of data");
+        }
+
+        Ok(Self {
+            dataset,
+            config,
+            x_min,
+            x_max,
+            y_min,
+            y_max,
+        })
+    }
+
+    pub fn x_min(&self) -> f64 {
+        self.x_min
+    }
+
+    pub fn x_max(&self) -> f64 {
+        self.x_max
+    }
+
+    pub fn y_min(&self) -> f64 {
+        self.y_min
+    }
+
+    pub fn y_max(&self) -> f64 {
+        self.y_max
+    }
+
+    pub fn height(&self) -> usize {
+        self.config.dimensions.height
+    }
+
+    pub fn width(&self) -> usize {
+        self.config.dimensions.width
+    }
+
+    pub fn log_x(&self) -> bool {
+        self.config.log_x
+    }
+
+    pub fn log_y(&self) -> bool {
+        self.config.log_y
+    }
+
+    pub fn x_range(&self) -> f64 {
+        self.x_max - self.x_min
+    }
+
+    pub fn y_range(&self) -> f64 {
+        self.y_max - self.y_min
+    }
+
+    fn draw_x_axis(&self) -> bool {
+        0.0 >= self.y_min && 0.0 <= self.y_max
+    }
+
+    fn draw_y_axis(&self) -> bool {
+        0.0 >= self.x_min && 0.0 <= self.x_max
+    }
+
+    pub fn axis_positions(&self) -> (usize, usize) {
+        let mut origin = Point(0.0, 0.0);
+        if !self.draw_y_axis() {
+            if 0.0 < self.x_min {
+                origin.0 = self.x_min;
+            } else {
+                origin.0 = self.x_max;
+            }
+        }
+
+        if !self.draw_x_axis() {
+            if 0.0 < self.y_min {
+                origin.1 = self.y_min;
+            } else {
+                origin.1 = self.y_max;
+            }
+        }
+
+        let sp = ScaledPoint::new_from_plot(
+            origin,
+            self,
+            TransformType::new(self.config.log_x, self.config.log_y),
+        );
+        // XXX Is this safe? SP are signed, but x_axis and y_axis are unsigned.
+        (sp.0 as usize, sp.1 as usize)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct PlotInfo {
     pub x_min: f64,
@@ -186,6 +369,8 @@ impl Default for PlotInfo {
 }
 
 pub fn draw(config: &Config, dataset: &DataSet) -> anyhow::Result<()> {
+    let plot = Plot::new(dataset, config)?;
+
     let mut plot_info = PlotInfo {
         log_x: config.log_x,
         log_y: config.log_y,
