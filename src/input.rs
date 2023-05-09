@@ -389,8 +389,11 @@ mod test {
 
     #[test]
     fn x_column_negative_numbers() {
-        let mut config = Config::default();
-        config.x_column = true;
+        let config = Config {
+            x_column: true,
+            ..Default::default()
+        };
+
         let mut dataset = DataSet::default();
 
         let line = "-300 -400";

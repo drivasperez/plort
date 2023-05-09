@@ -35,7 +35,7 @@ fn main_loop(config: &Config, reader: &mut impl BufRead) -> anyhow::Result<()> {
     let mut dataset = DataSet::default();
     let mut end_of_stream = false;
     while !end_of_stream {
-        let status = read_input(&config, &mut dataset, reader).context("Reading input")?;
+        let status = read_input(config, &mut dataset, reader).context("Reading input")?;
         if let ReadInputStatus::EndOfStream = status {
             end_of_stream = true;
         }
@@ -44,7 +44,7 @@ fn main_loop(config: &Config, reader: &mut impl BufRead) -> anyhow::Result<()> {
             return Ok(());
         }
 
-        draw(&config, &dataset).context("Drawing diagram")?;
+        draw(config, &dataset).context("Drawing diagram")?;
         if !end_of_stream {
             println!();
         }

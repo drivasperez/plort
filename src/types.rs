@@ -53,21 +53,14 @@ impl Point {
 }
 
 #[derive(Debug)]
+#[derive(Default)]
 pub struct DataSet {
     pub columns: usize,
     pub rows: usize,
     pub points: Vec<Vec<Point>>, // p[column][row]
 }
 
-impl Default for DataSet {
-    fn default() -> Self {
-        DataSet {
-            columns: 0,
-            rows: 0,
-            points: Vec::new(),
-        }
-    }
-}
+
 
 impl DataSet {
     pub fn add_pair(&mut self, config: &Config, row: usize, col: usize, point: Point) {
@@ -85,15 +78,15 @@ impl DataSet {
         // Add rows, padding with None as necessary
         while row >= self.rows {
             for col in 0..self.columns {
-                self.points[col as usize].push(Point(EMPTY_VALUE, EMPTY_VALUE));
+                self.points[col].push(Point(EMPTY_VALUE, EMPTY_VALUE));
             }
             self.rows += 1;
         }
 
         if config.flip_xy {
-            self.points[col as usize][row] = Point(point.1, point.0);
+            self.points[col][row] = Point(point.1, point.0);
         } else {
-            self.points[col as usize][row] = point;
+            self.points[col][row] = point;
         }
     }
 }

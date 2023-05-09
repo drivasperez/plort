@@ -37,7 +37,7 @@ pub fn svg_plot(plot: &Plot, theme: &SvgTheme) {
 
     for c in 0..plot.dataset.columns {
         let color = theme.get_color(c);
-        let column = &plot.dataset.points[c as usize];
+        let column = &plot.dataset.points[c];
 
         if plot.config.mode == PlotType::Line {
             let mut beginning_line = true;
@@ -72,7 +72,7 @@ pub fn svg_plot(plot: &Plot, theme: &SvgTheme) {
                 let point_size = 3.0;
                 if let PlotType::Count = plot.config.mode {
                     let counters = &plot.counters();
-                    let counter = counters.counters.get(c as usize).unwrap();
+                    let counter = counters.counters.get(c).unwrap();
                     let count = counter.get(&(sp.0, sp.1)).unwrap_or(&0);
                     let r = if plot.config.log_count {
                         (*count as f64).ln() + point_size

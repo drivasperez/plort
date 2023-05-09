@@ -30,7 +30,7 @@ impl<'a> Plot<'a> {
 
         for col in 0..dataset.columns {
             for row in 0..dataset.rows {
-                let point = dataset.points[col as usize][row];
+                let point = dataset.points[col][row];
                 if point.is_empty() {
                     continue;
                 }
@@ -451,7 +451,7 @@ mod test {
 
         let mut dataset = DataSet::default();
 
-        let mut plot_info = read_lines(&cfg, &mut dataset, &lines);
+        let plot_info = read_lines(&cfg, &mut dataset, &lines);
 
         assert_ne!(plot_info.y_range(), 0.0);
     }

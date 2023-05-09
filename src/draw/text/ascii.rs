@@ -97,7 +97,7 @@ impl<'a> AsciiPlot<'a> {
     fn plot_points(&mut self) {
         for c in 0..self.plot.dataset.columns {
             for r in 0..self.plot.dataset.rows {
-                let p = self.plot.dataset.points[c as usize][r];
+                let p = self.plot.dataset.points[c][r];
                 if p.is_empty() {
                     continue;
                 }
@@ -106,7 +106,7 @@ impl<'a> AsciiPlot<'a> {
                 let mut mark = col_mark(c);
                 if let PlotType::Count = self.plot.config.mode {
                     let counters = &mut self.plot.counters();
-                    let count = counters.counters[c as usize].get(&(sp.0, sp.1));
+                    let count = counters.counters[c].get(&(sp.0, sp.1));
                     if let Some(&count) = count {
                         if count < 10 {
                             // This is not a good idea with unicode, but it works for ASCII
