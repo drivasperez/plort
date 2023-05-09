@@ -195,6 +195,36 @@ impl<'a> Plot<'a> {
         // XXX Is this safe? SP are signed, but x_axis and y_axis are unsigned.
         (sp.0 as usize, sp.1 as usize)
     }
+
+    pub fn counters(&self) -> Counters {
+        let mut counters = Vec::new();
+        for col in 0..self.dataset.columns {
+            let points = &self.dataset.points[col];
+            let transform = TransformType::new(self.config.log_x, self.config.log_y);
+            let mut counts = HashMap::new();
+
+            for point in points.iter().take(self.dataset.rows) {
+                if point.0.is_nan() || point.1.is_nan() {
+                    continue;
+                }
+
+                let scaled_point = ScaledPoint::new_from_plot(*point, self, transform);
+                let x = scaled_point.0;
+                let y = scaled_point.1;
+
+                let count = counts.entry((x, y)).or_insert(0);
+                *count += 1;
+            }
+
+            counters.push(counts);
+        }
+
+        Counters { counters }
+    }
+}
+
+struct Counters {
+    counters: Vec<HashMap<(i32, i32), u32>>,
 }
 
 #[derive(Debug, Clone)]
