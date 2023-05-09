@@ -1,8 +1,8 @@
 use crate::{
-    config::{Config, PlotType},
-    draw::PlotInfo,
+    config::PlotType,
+    draw::Plot,
     scale::{ScaledPoint, TransformType},
-    types::{DataSet, Point},
+    types::Point,
 };
 
 pub struct SvgTheme {
@@ -25,22 +25,21 @@ impl SvgTheme {
     }
 }
 
-pub fn svg_plot(config: &Config, plot_info: &mut PlotInfo, dataset: &DataSet, theme: &SvgTheme) {
-    print_header(plot_info.width, plot_info.height);
-    print_frame(plot_info.width, plot_info.height, theme);
+pub fn svg_plot(plot: &Plot, theme: &SvgTheme) {
+    print_header(plot.width(), plot.height());
+    print_frame(plot.width(), plot.height(), theme);
 
-    if config.axis {
-        plot_info.calc_axis_pos();
-        print_axis(plot_info, theme);
+    if plot.config.axis {
+        print_axis(plot, theme);
     }
 
-    let transform = TransformType::new(plot_info.log_x, plot_info.log_y);
+    let transform = TransformType::new(plot.log_x(), plot.log_y());
 
-    for c in 0..dataset.columns {
+    for c in 0..plot.dataset.columns {
         let color = theme.get_color(c);
-        let column = &dataset.points[c as usize];
+        let column = &plot.dataset.points[c as usize];
 
-        if config.mode == PlotType::Line {
+        if plot.config.mode == PlotType::Line {
             let mut beginning_line = true;
             for p in column {
                 if p.is_empty() {
@@ -56,7 +55,7 @@ pub fn svg_plot(config: &Config, plot_info: &mut PlotInfo, dataset: &DataSet, th
                     begin_polyline();
                 }
 
-                let sp = ScaledPoint::new(*p, plot_info, transform);
+                let sp = ScaledPoint::new_from_plot(*p, plot, transform);
                 polyline_point(sp.x(), sp.y());
             }
 
@@ -65,16 +64,17 @@ pub fn svg_plot(config: &Config, plot_info: &mut PlotInfo, dataset: &DataSet, th
             }
         } else {
             for p in column {
-                let sp = ScaledPoint::new(*p, plot_info, transform);
+                let sp = ScaledPoint::new_from_plot(*p, plot, transform);
                 if p.is_empty() {
                     continue;
                 }
 
                 let point_size = 3.0;
-                if let Some(counters) = &plot_info.counters {
-                    let counter = counters.get(c as usize).unwrap();
+                if let PlotType::Count = plot.config.mode {
+                    let counters = &plot.counters();
+                    let counter = counters.counters.get(c as usize).unwrap();
                     let count = counter.get(&(sp.0, sp.1)).unwrap_or(&0);
-                    let r = if config.log_count {
+                    let r = if plot.config.log_count {
                         (*count as f64).ln() + point_size
                     } else {
                         *count as f64 + point_size
@@ -86,10 +86,10 @@ pub fn svg_plot(config: &Config, plot_info: &mut PlotInfo, dataset: &DataSet, th
             }
         }
 
-        if config.regression {
+        if plot.config.regression {
             let regression = crate::regression::linear_regression(column, transform);
             if let Some(regression) = regression {
-                regression_line(plot_info, color, regression);
+                regression_line(plot, color, regression);
             }
         }
     }
@@ -133,39 +133,40 @@ fn print_circle(x: i32, y: i32, r: f64, color: &str) {
     );
 }
 
-fn print_axis(plot_info: &PlotInfo, theme: &SvgTheme) {
+fn print_axis(plot: &Plot, theme: &SvgTheme) {
     let tick_width = 3.0 * theme.axis_width;
+    let (x_axis, y_axis) = plot.axis_positions();
 
-    if plot_info.draw_y_axis {
+    if plot.draw_y_axis() {
         // Y-axis
         println!(
             r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="{}" stroke-dasharray="2.5"/>"#,
-            plot_info.x_axis,
+            x_axis,
             0,
-            plot_info.x_axis,
-            plot_info.height,
+            x_axis,
+            plot.height(),
             theme.axis_color,
             theme.axis_width
         );
 
         // Ticks
-        let mut x0 = plot_info.x_axis as f64 - tick_width;
-        let x1 = plot_info.x_axis as f64 + tick_width;
-        if x0 > plot_info.width as f64 {
+        let mut x0 = x_axis as f64 - tick_width;
+        let x1 = x_axis as f64 + tick_width;
+        if x0 > plot.width() as f64 {
             x0 = 0.0;
         }
 
-        let y_to = scale_tick(plot_info.height, plot_info.y_range);
+        let y_to = scale_tick(plot.height(), plot.y_range());
 
-        let mut hy = plot_info.y_axis as f64 + y_to;
-        while hy < plot_info.height as f64 {
+        let mut hy = y_axis as f64 + y_to;
+        while hy < plot.height() as f64 {
             println!(
                 r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="1" />"#,
                 x0, hy, x1, hy, theme.axis_color
             );
             hy += y_to;
         }
-        let mut hy = plot_info.y_axis as f64 - y_to;
+        let mut hy = y_axis as f64 - y_to;
         while hy > 0.0 {
             println!(
                 r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="1" />"#,
@@ -175,36 +176,36 @@ fn print_axis(plot_info: &PlotInfo, theme: &SvgTheme) {
         }
     }
 
-    if plot_info.draw_x_axis {
+    if plot.draw_x_axis() {
         // X-axis
         println!(
             r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="{}" stroke-dasharray="2.5" />"#,
             0,
-            plot_info.y_axis,
-            plot_info.width,
-            plot_info.y_axis,
+            y_axis,
+            plot.width(),
+            y_axis,
             theme.axis_color,
             theme.axis_width
         );
 
         // Ticks
-        let mut y0 = plot_info.y_axis as f64 - tick_width;
-        let y1 = plot_info.y_axis as f64 + tick_width;
-        if y0 > plot_info.height as f64 {
+        let mut y0 = y_axis as f64 - tick_width;
+        let y1 = y_axis as f64 + tick_width;
+        if y0 > plot.height() as f64 {
             y0 = 0.0;
         }
 
-        let x_to = scale_tick(plot_info.width, plot_info.x_range);
+        let x_to = scale_tick(plot.width(), plot.x_range());
 
-        let mut wx = plot_info.x_axis as f64 + x_to;
-        while wx < plot_info.width as f64 {
+        let mut wx = x_axis as f64 + x_to;
+        while wx < plot.width() as f64 {
             println!(
                 r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="1" />"#,
                 wx, y0, wx, y1, theme.axis_color
             );
             wx += x_to;
         }
-        let mut wx = plot_info.x_axis as f64 - x_to;
+        let mut wx = x_axis as f64 - x_to;
         while wx > 0.0 {
             println!(
                 r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="1" />"#,
@@ -215,15 +216,15 @@ fn print_axis(plot_info: &PlotInfo, theme: &SvgTheme) {
     }
 }
 
-fn regression_line(plot_info: &PlotInfo, color: &str, regression: (f64, f64)) {
+fn regression_line(plot: &Plot, color: &str, regression: (f64, f64)) {
     let (slope, intercept) = regression;
 
-    let p0 = Point(plot_info.x_min, intercept + slope * plot_info.x_min);
-    let p1 = Point(plot_info.x_max, intercept + slope * plot_info.x_max);
+    let p0 = Point(plot.x_min(), intercept + slope * plot.x_min());
+    let p1 = Point(plot.x_max(), intercept + slope * plot.x_max());
 
     // Already scaled, so no need to scale again. Just need to create a ScaledPoint.
-    let p0 = ScaledPoint::new(p0, plot_info, crate::scale::TransformType::None);
-    let p1 = ScaledPoint::new(p1, plot_info, crate::scale::TransformType::None);
+    let p0 = ScaledPoint::new_from_plot(p0, plot, crate::scale::TransformType::None);
+    let p1 = ScaledPoint::new_from_plot(p1, plot, crate::scale::TransformType::None);
 
     println!(
         r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="{}" stroke-dasharray="5" />"#,

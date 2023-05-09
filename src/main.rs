@@ -15,8 +15,6 @@ mod scale;
 mod types;
 mod utf;
 
-const MAX_COLUMNS: u8 = 255;
-
 fn main() -> anyhow::Result<()> {
     pretty_env_logger::init();
     let config = Config::parse();

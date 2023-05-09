@@ -1,67 +1,53 @@
-use crate::config::{Config, PlotType};
-use crate::draw::PlotInfo;
+use crate::config::PlotType;
+use crate::draw::Plot;
 use crate::scale::{ScaledPoint, TransformType};
-use crate::types::DataSet;
 use colored::Colorize;
 
 pub struct AsciiPlot<'a> {
-    config: &'a Config,
-    dataset: &'a DataSet,
-    plot_info: &'a mut PlotInfo,
+    plot: &'a Plot<'a>,
     rows: Vec<Vec<String>>,
 }
 
 impl<'a> AsciiPlot<'a> {
-    pub fn new(config: &'a Config, dataset: &'a DataSet, plot_info: &'a mut PlotInfo) -> Self {
+    pub fn new(plot: &'a Plot<'a>) -> Self {
         let s = String::from(" ");
-        let row = vec![s; plot_info.width];
+        let row = vec![s; plot.width()];
         let mut rows = Vec::new();
-        for _ in 0..plot_info.height {
+        for _ in 0..plot.height() {
             rows.push(row.clone());
         }
 
-        Self {
-            config,
-            dataset,
-            plot_info,
-            rows,
-        }
+        Self { plot, rows }
     }
 
     fn print_header(&mut self) {
-        let point_counts = self.config.mode == PlotType::Count;
-        let columns = self.dataset.columns;
-        if self.plot_info.log_x {
+        let point_counts = self.plot.config.mode == PlotType::Count;
+        let columns = self.plot.dataset.columns;
+        if self.plot.config.log_x {
             print!(
                 "    x: log [{} - {}]",
-                self.plot_info.x_min.exp(),
-                self.plot_info.x_max.exp()
+                self.plot.x_min().exp(),
+                self.plot.x_max().exp()
             );
         } else {
-            print!(
-                "    x: [{} - {}]",
-                self.plot_info.x_min, self.plot_info.x_max
-            );
+            print!("    x: [{} - {}]", self.plot.x_min(), self.plot.x_max());
         }
 
-        if self.plot_info.log_y {
+        if self.plot.log_y() {
             print!(
                 "    y: log [{} - {}]",
-                self.plot_info.y_min.exp(),
-                self.plot_info.y_max.exp()
+                self.plot.y_min().exp(),
+                self.plot.y_max().exp()
             );
         } else {
-            print!(
-                "    y: [{} - {}]",
-                self.plot_info.y_min, self.plot_info.y_max
-            );
+            print!("    y: [{} - {}]", self.plot.y_min(), self.plot.y_max());
         }
 
         if !point_counts {
             print!(" -- ");
             let count_key = (0..columns)
                 .map(|i| {
-                    let (r, g, b) = self.config.color_scheme.series_color(i);
+                    let (r, g, b) = self.plot.config.color_scheme.series_color(i);
                     col_mark(i).to_string().truecolor(r, g, b).to_string()
                 })
                 .collect::<Vec<_>>()
@@ -72,11 +58,11 @@ impl<'a> AsciiPlot<'a> {
     }
 
     fn draw_axes(&mut self) {
-        self.plot_info.calc_axis_pos();
+        let (x_axis, y_axis) = self.plot.axis_positions();
 
-        let (r, g, b) = self.config.color_scheme.axis_color();
+        let (r, g, b) = self.plot.config.color_scheme.axis_color();
         for (i, row) in self.rows.iter_mut().enumerate() {
-            let c = if self.plot_info.draw_y_axis {
+            let c = if self.plot.draw_y_axis() {
                 if i % 5 == 0 {
                     "+"
                 } else {
@@ -87,11 +73,11 @@ impl<'a> AsciiPlot<'a> {
             } else {
                 " "
             };
-            row[self.plot_info.x_axis] = c.truecolor(r, g, b).to_string();
+            row[x_axis] = c.truecolor(r, g, b).to_string();
         }
 
-        for i in 0..self.plot_info.width {
-            let c = if self.plot_info.draw_x_axis {
+        for i in 0..self.plot.width() {
+            let c = if self.plot.draw_x_axis() {
                 if i % 5 == 0 {
                     "+"
                 } else {
@@ -102,26 +88,25 @@ impl<'a> AsciiPlot<'a> {
             } else {
                 " "
             };
-            // rows[plot_info.y_axis][i] = c.truecolor(211, 219, 216).to_string();
-            self.rows[self.plot_info.y_axis][i] = c.truecolor(r, g, b).to_string();
+            self.rows[y_axis][i] = c.truecolor(r, g, b).to_string();
         }
 
-        self.rows[self.plot_info.y_axis][self.plot_info.x_axis] =
-            "+".truecolor(r, g, b).to_string();
+        self.rows[y_axis][x_axis] = "+".truecolor(r, g, b).to_string();
     }
 
     fn plot_points(&mut self) {
-        for c in 0..self.dataset.columns {
-            for r in 0..self.dataset.rows {
-                let p = self.dataset.points[c as usize][r];
+        for c in 0..self.plot.dataset.columns {
+            for r in 0..self.plot.dataset.rows {
+                let p = self.plot.dataset.points[c as usize][r];
                 if p.is_empty() {
                     continue;
                 }
-                let transform = TransformType::new(self.plot_info.log_x, self.plot_info.log_y);
-                let sp = ScaledPoint::new(p, self.plot_info, transform);
+                let transform = TransformType::new(self.plot.log_x(), self.plot.log_y());
+                let sp = ScaledPoint::new_from_plot(p, self.plot, transform);
                 let mut mark = col_mark(c);
-                if let Some(counters) = &self.plot_info.counters {
-                    let count = counters[c as usize].get(&(sp.0, sp.1));
+                if let PlotType::Count = self.plot.config.mode {
+                    let counters = &mut self.plot.counters();
+                    let count = counters.counters[c as usize].get(&(sp.0, sp.1));
                     if let Some(&count) = count {
                         if count < 10 {
                             // This is not a good idea with unicode, but it works for ASCII
@@ -134,7 +119,7 @@ impl<'a> AsciiPlot<'a> {
                     }
                 }
 
-                let (r, g, b) = self.config.color_scheme.series_color(c);
+                let (r, g, b) = self.plot.config.color_scheme.series_color(c);
                 let mark = mark.to_string().truecolor(r, g, b).to_string();
 
                 self.rows[sp.1 as usize][sp.0 as usize] = mark.to_string();
@@ -162,9 +147,9 @@ fn col_mark(col: usize) -> char {
     }
 }
 
-pub fn ascii_plot(config: &Config, dataset: &DataSet, plot_info: &mut PlotInfo) {
-    let mut graph = AsciiPlot::new(config, dataset, plot_info);
-    if config.axis {
+pub fn ascii_plot(plot: &Plot) {
+    let mut graph = AsciiPlot::new(plot);
+    if plot.config.axis {
         graph.draw_axes();
     }
 
